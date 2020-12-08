@@ -12,6 +12,14 @@ meta:
 
   manifest:
     directory: manifests
+    vars: |
+      ---
+      deployment_name: gk-uaa-testflight
+      network_name: default
+    vars-pr: |
+      ---
+      deployment_name: gk-uaa-testflight-pr
+      network_name: default
 
   git:
     email:  ((git-commit-email))
@@ -42,7 +50,7 @@ meta:
 
   bosh:
     stemcell:
-      cpi: "warden-boshlite"
+      cpi: warden-boshlite
 
   slack:
     webhook:       ((slack-webhook))

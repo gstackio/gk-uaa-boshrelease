@@ -1,0 +1,224 @@
+---
+name: ((deployment_name))
+
+# NOTE: this deployment requires the BOSH DNS add-on to be collocated by some
+# runtime-config to be setup on the BOSH Director.
+#
+# See:
+#   - https://bosh.io/docs/dns/#dns-release
+#   - https://github.com/cloudfoundry/bosh-deployment/blob/master/runtime-configs/dns.yml
+features:
+  use_dns_addresses: true
+
+addons:
+  - name: bpm
+    jobs:
+      - name: bpm
+        release: bpm
+  - name: trusted-ca-certs
+    jobs:
+      - name: ca_certs
+        release: os-conf
+        properties:
+          certs: |
+            ((uaa_ca.certificate))
+
+instance_groups:
+  - name: uaa
+    instances: 1
+    azs: [ z1 ]
+    jobs:
+      - name: postgres
+        release: postgres
+        provides:
+          postgres:
+            as: db-server-address
+            aliases:
+              - domain: db.service.uaa.internal
+                health_filter: smart
+        properties:
+          databases:
+            port: 5432
+            tls: ((database_tls))
+            databases:
+              - name: &uaa_db_name uaa
+            roles:
+              - name: &uaa_db_username uaa
+                password: ((uaa_db_password))
+      - name: pre-start-script
+        release: os-conf
+        properties:
+          script: |
+            #!/usr/bin/env bash
+            set -ex
+            mkdir -p /home/vcap/.postgresql
+            chown vcap:vcap /home/vcap/.postgresql
+            cat > /home/vcap/.postgresql/root.crt <<EOF
+            ((database_tls.ca))
+            EOF
+            chown vcap:vcap /home/vcap/.postgresql/root.crt
+      - name: uaa
+        release: uaa
+        provides:
+          # NOTE: any link would do the trick here, as the point is actually
+          # to define some BOSH DNS alias fir the UAA job.
+          uaa_keys:
+            as: uaa-server-address
+            aliases:
+              - domain: uaa.service.uaa.internal
+                health_filter: smart
+        consumes:
+          database: { from: postgres }
+        properties:
+          bpm:
+            enabled: false
+          uaadb:
+            db_scheme: postgresql
+            port: 5432
+            tls_enabled: true
+            skip_ssl_validation: false
+            databases:
+              - tag: uaa
+                name: *uaa_db_name
+            roles:
+              - tag: admin
+                name: *uaa_db_username
+                password: ((uaa_db_password))
+          encryption:
+            active_key_label: uaa-encryption-key-1
+            encryption_keys:
+              - label: uaa-encryption-key-1
+                passphrase: ((uaa_encryption_passphrase_1))
+          login:
+            saml:
+              serviceProviderCertificate: ((uaa_service_provider_tls.certificate))
+              serviceProviderKey: ((uaa_service_provider_tls.private_key))
+              serviceProviderKeyPassword: ""
+          uaa:
+            url: https://uaa.service.uaa.internal:8443
+            ssl:
+              port: 8443
+            sslCertificate: ((uaa_tls.certificate))
+            sslPrivateKey: ((uaa_tls.private_key))
+            jwt:
+              revocable: true
+              policy:
+                active_key_id: uaa-jwt-key-1
+                keys:
+                  uaa-jwt-key-1:
+                    signingKey: ((uaa_jwt_signing_key.private_key))
+              refresh:
+                format: opaque
+            catalina_opts: -Djava.security.egd=file:/dev/./urandom -Xms384m -Xmx384m -XX:MaxMetaspaceSize=256m
+            zones: { internal: { hostnames: [ uaa.service.uaa.internal ] } }
+            login:
+              client_secret: ((uaa_login_client_secret))
+            clients:
+              uaa_admin:
+                authorities: clients.read,clients.write,clients.secret,uaa.admin,scim.read,scim.write,password.write
+                authorized-grant-types: client_credentials
+                override: true
+                scope: ""
+                secret: ((uaa_admin_client_secret))
+            scim:
+              users:
+                - name: john.doe
+                  password: ((example_user_password))
+                  groups:
+                    - example-group.read
+              groups:
+                example-group.read: User has read access
+                example-group.write: User has write access
+                example-group.admin: User has admin access
+    stemcell: xenial
+    vm_type: default
+    persistent_disk_type: 1GB
+    networks:
+      - name: ((network_name))
+
+update:
+  serial: true
+  canaries: 1
+  canary_watch_time: 1000-60000
+  max_in_flight: 1
+  update_watch_time: 1000-60000
+
+variables:
+  - name: uaa_ca
+    type: certificate
+    options:
+      is_ca: true
+      common_name: ca
+    update_mode: converge
+
+  - name: uaa_db_password
+    type: password
+  - name: database_tls
+    type: certificate
+    options:
+      ca: uaa_ca
+      common_name: db.service.uaa.internal
+      alternative_names:
+        - db.service.uaa.internal
+        - q-s0.uaa.((network_name)).((deployment_name)).bosh
+        - 127.0.0.1
+    consumes:
+      alternative_name: { from: db-server-address }
+    update_mode: converge
+
+  - name: example_user_password
+    type: password
+
+  - name: uaa_jwt_signing_key
+    type: rsa
+  - name: uaa_admin_client_secret
+    type: password
+  - name: uaa_login_client_secret
+    type: password
+  - name: uaa_encryption_passphrase_1
+    type: password
+
+  - name: uaa_tls
+    type: certificate
+    options:
+      ca: uaa_ca
+      common_name: uaa.service.uaa.internal
+      alternative_names:
+        - uaa.service.uaa.internal
+        - q-s0.uaa.((network_name)).((deployment_name)).bosh
+    consumes:
+      alternative_name: { from: uaa-server-address }
+    update_mode: converge
+
+  - name: uaa_service_provider_tls
+    type: certificate
+    options:
+      ca: uaa_ca
+      common_name: uaa.service.uaa.internal
+      alternative_names:
+        - uaa.service.uaa.internal
+        - q-s0.uaa.((network_name)).((deployment_name)).bosh
+    consumes:
+      alternative_name: { from: uaa-server-address }
+    update_mode: converge
+
+stemcells:
+  - alias: xenial
+    os: ubuntu-xenial
+    version: latest
+
+releases:
+- name: uaa
+  version: latest
+- name: bpm
+  sha1: dcf0582d838a73de29da273552ae79ac3098ee8b
+  url: https://bosh.io/d/github.com/cloudfoundry/bpm-release?v=1.1.9
+  version: 1.1.9
+- name: postgres
+  sha1: e44bbe8f8a7cdde1cda67b202e399a239d104db6
+  url: https://bosh.io/d/github.com/cloudfoundry/postgres-release?v=43
+  version: "43"
+- name: os-conf
+  sha1: 7ef05f6f3ebc03f59ad8131851dbd1abd1ab3663
+  url: https://bosh.io/d/github.com/cloudfoundry/os-conf-release?v=22.1.0
+  version: 22.1.0
