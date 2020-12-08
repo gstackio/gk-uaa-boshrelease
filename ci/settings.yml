@@ -21,7 +21,10 @@ meta:
     name: gstack/gk-ops
   ruby-image:
     name: ruby
-    tag:  2.3.7-slim
+    # NOTE: we don't use any slim image here, because we need 'make' and build
+    # tools for 'bundle install' to properly compile and install the required
+    # gems.
+    tag:  "2.7.2"
 
   aws:
     bucket:      (( grab meta.pipeline ))
@@ -72,16 +75,24 @@ jobs:
         config:
           platform: linux
           inputs:
-            - { name: git }
+            - name: git
+          caches:
+            - path: gem-home
           run:
             path: bash
             args:
               - -c
               - |
-                set -ueo pipefail
+                set -ueo pipefail -x
+
+                cached_gem_home=${PWD}/gem-home
+                export GEM_PATH=${cached_gem_home}${GEM_HOME:+":${GEM_HOME}"}
+                export GEM_HOME=${cached_gem_home}
+
                 pushd "git" > /dev/null
+
                 bundle install
-                rake
+                bundle exec rake
       on_failure:
         put: notify
         params:
