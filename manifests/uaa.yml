@@ -32,7 +32,6 @@ instance_groups:
         release: postgres
         provides:
           postgres:
-            as: db-server-address
             aliases:
               - domain: db.service.uaa.internal
                 health_filter: smart
@@ -163,7 +162,7 @@ variables:
         - q-s0.uaa.((network_name)).((deployment_name)).bosh
         - 127.0.0.1
     consumes:
-      alternative_name: { from: db-server-address }
+      alternative_name: { from: postgres }
     update_mode: converge
 
   - name: example_user_password
