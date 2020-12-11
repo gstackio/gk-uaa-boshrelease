@@ -38,6 +38,10 @@ meta:
     # gems.
     tag:  "2.7.2"
 
+  java-image:
+    name: harbor.ci.gstack.io/library/java
+    tag:  11.0.9-slim
+
   aws:
     bucket:      (( grab meta.pipeline ))
     region_name: eu-west-3
@@ -82,9 +86,32 @@ jobs:
     - name: main
       do:
       - { get: git, trigger: true }
+      - { get: java-image }
       - { get: ruby-image }
-      - name: pre-flight
-        task: pre-flight
+      - name: pre-flight-java
+        task: pre-flight-java
+        image: java-image
+        config:
+          platform: linux
+          inputs:
+            - name: git
+          caches:
+            - path: gradle-home
+          run:
+            path: bash
+            args:
+              - -c
+              - |
+                set -ueo pipefail -x
+
+                export GRADLE_USER_HOME=${PWD}/gradle-home
+
+                pushd "git" > /dev/null
+
+                ./gradlew build --build-cache
+
+      - name: pre-flight-rake
+        task: pre-flight-rake
         image: ruby-image
         config:
           platform: linux
@@ -147,6 +174,14 @@ jobs:
             UAA_VERSION: (( grab meta.initial_version )) # maybe 'latest' would work here?
 
 resources:
+  - name: java-image
+    type: docker-image
+    source:
+      repository: (( grab meta.java-image.name ))
+      tag:        (( grab meta.java-image.tag ))
+      username:   (( grab meta.image.registry.username ))
+      password:   (( grab meta.image.registry.password ))
+
   - name: ruby-image
     type: docker-image
     source:
