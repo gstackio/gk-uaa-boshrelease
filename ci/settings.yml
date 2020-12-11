@@ -115,6 +115,30 @@ jobs:
       do:
       - (( inline ))
       - { get: git, trigger: true, passed: [ pre-flight ] }
+      - {}
+      - name: testflight
+        config:
+          params:
+            # NOTE: this UAA_VERSION environment variable is required by the
+            # 'pre_packaging' script of the 'uaa' package, in the 'uaa' BOSH
+            # Release.
+            UAA_VERSION: (( grab meta.initial_version )) # maybe 'latest' would work here?
+
+  - name: testflight-pr
+    plan:
+    - name: main
+      do:
+      - (( inline ))
+      - {} # get: git-pull-requests
+      - {} # get: image
+      - {} # name: pending-status
+      - name: testflight
+        config:
+          params:
+            # NOTE: this UAA_VERSION environment variable is required by the
+            # 'pre_packaging' script of the 'uaa' package, in the 'uaa' BOSH
+            # Release.
+            UAA_VERSION: (( grab meta.initial_version )) # maybe 'latest' would work here?
 
 resources:
   - name: ruby-image
