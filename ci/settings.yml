@@ -55,6 +55,8 @@ meta:
   bosh:
     stemcell:
       cpi: warden-boshlite
+    deployment:    (( concat "gk-" meta.name "-testflight" ))
+    deployment-pr: (( concat "gk-" meta.name "-testflight-pr" ))
 
   slack:
     webhook:       ((slack-webhook))

@@ -76,7 +76,7 @@ instance_groups:
           database: { from: postgres }
         properties:
           bpm:
-            enabled: false
+            enabled: true
           uaadb:
             db_scheme: postgresql
             port: 5432
