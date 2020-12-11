@@ -31,14 +31,20 @@ instance_groups:
       - name: postgres
         release: postgres
         provides:
-          postgres:
+          db-server-address:
             aliases:
               - domain: db.service.uaa.internal
                 health_filter: smart
+        custom_provider_definitions:
+          - name: db-server-address
+            type: address
         properties:
           databases:
             port: 5432
-            tls: ((database_tls))
+            tls:
+              ca: ((database_tls.ca))
+              certificate: ((database_tls.certificate))
+              private_key: ((database_tls.private_key))
             databases:
               - name: &uaa_db_name uaa
             roles:
@@ -59,13 +65,13 @@ instance_groups:
       - name: uaa
         release: uaa
         provides:
-          # NOTE: any link would do the trick here, as the point is actually
-          # to define some BOSH DNS alias fir the UAA job.
-          uaa_keys:
-            as: uaa-server-address
+          uaa-server-address:
             aliases:
               - domain: uaa.service.uaa.internal
                 health_filter: smart
+        custom_provider_definitions:
+          - name: uaa-server-address
+            type: address
         consumes:
           database: { from: postgres }
         properties:
@@ -162,7 +168,7 @@ variables:
         - q-s0.uaa.((network_name)).((deployment_name)).bosh
         - 127.0.0.1
     consumes:
-      alternative_name: { from: postgres }
+      alternative_name: { from: db-server-address }
     update_mode: converge
 
   - name: example_user_password
