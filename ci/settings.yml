@@ -14,11 +14,11 @@ meta:
     directory: manifests
     vars: |
       ---
-      deployment_name: gk-uaa-testflight
+      deployment_name: gk-uaa-testflight     # must match 'meta.bosh.deployment'
       network_name: default
     vars-pr: |
       ---
-      deployment_name: gk-uaa-testflight-pr
+      deployment_name: gk-uaa-testflight-pr  # must match 'meta.bosh.deployment-pr'
       network_name: default
 
   git:
