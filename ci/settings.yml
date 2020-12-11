@@ -26,9 +26,13 @@ meta:
     name:   ((git-commit-name))
 
   image:
-    name: gstack/gk-ops
+    name: harbor.ci.gstack.io/gstack/gk-ops
+    registry:
+      username: ((docker-registry-username))
+      password: ((docker-registry-password))
+
   ruby-image:
-    name: ruby
+    name: harbor.ci.gstack.io/library/ruby
     # NOTE: we don't use any slim image here, because we need 'make' and build
     # tools for 'bundle install' to properly compile and install the required
     # gems.
@@ -146,3 +150,5 @@ resources:
     source:
       repository: (( grab meta.ruby-image.name ))
       tag:        (( grab meta.ruby-image.tag ))
+      username:   (( grab meta.image.registry.username ))
+      password:   (( grab meta.image.registry.password ))
