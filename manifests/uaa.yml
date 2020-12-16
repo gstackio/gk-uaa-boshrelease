@@ -135,6 +135,45 @@ instance_groups:
                 example-group.read: User has read access
                 example-group.write: User has write access
                 example-group.admin: User has admin access
+            user:
+              # Reduce the list of default authorities/scopes/groups assigned
+              # to all users:
+              authorities:
+                # Access profile information, i.e. email, first and last name,
+                # and phone number
+                - openid
+
+                - scim.me         # (undocumented)
+
+                # # View details of your applications and services
+                # - cloud_controller.read
+
+                # # Push applications to your account and create and bind
+                # # services
+                # - cloud_controller.write
+
+                # # Verify user permission to manage service instances
+                # - cloud_controller_service_permissions.read
+
+                # Change your password
+                - password.write
+
+                # Act as a user in the UAA
+                - uaa.user
+
+                - approvals.me    # (undocumented)
+
+                # Manage approved scopes
+                - oauth.approvals
+
+                # - notification_preferences.read  # (undocumented)
+                # - notification_preferences.write # (undocumented)
+                - profile         # (undocumented)
+                - roles           # (undocumented)
+                - user_attributes # (undocumented)
+
+                # Allow offline access
+                - uaa.offline_token
     stemcell: xenial
     vm_type: default
     persistent_disk_type: 1GB
