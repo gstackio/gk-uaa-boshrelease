@@ -86,29 +86,7 @@ jobs:
     - name: main
       do:
       - { get: git, trigger: true }
-      - { get: java-image }
       - { get: ruby-image }
-      - name: pre-flight-java
-        task: pre-flight-java
-        image: java-image
-        config:
-          platform: linux
-          inputs:
-            - name: git
-          caches:
-            - path: gradle-home
-          run:
-            path: bash
-            args:
-              - -c
-              - |
-                set -ueo pipefail -x
-
-                export GRADLE_USER_HOME=${PWD}/gradle-home
-
-                pushd "git/src/uaa" > /dev/null
-
-                ./gradlew build --build-cache
 
       - name: pre-flight-rake
         task: pre-flight-rake
@@ -140,7 +118,44 @@ jobs:
           channel:  (( grab meta.slack.channel ))
           username: (( grab meta.slack.username ))
           icon_url: (( grab meta.slack.icon ))
-          text:    '(( concat meta.slack.fail_url " " meta.pipeline ": testflight job failed" ))'
+          text:    '(( concat meta.slack.fail_url " " meta.pipeline ": pre-flight job failed" ))'
+
+  - name: pre-flight-java
+    public: true
+    serial: true
+    plan:
+    - name: main
+      do:
+      - { get: git, trigger: true, passed: [ pre-flight ] }
+      - { get: java-image }
+      - name: pre-flight-java
+        task: pre-flight-java
+        image: java-image
+        config:
+          platform: linux
+          inputs:
+            - name: git
+          caches:
+            - path: gradle-home
+          run:
+            path: bash
+            args:
+              - -c
+              - |
+                set -ueo pipefail -x
+
+                export GRADLE_USER_HOME=${PWD}/gradle-home
+
+                pushd "git/src/uaa" > /dev/null
+
+                ./gradlew build --build-cache --stacktrace
+      on_failure:
+        put: notify
+        params:
+          channel:  (( grab meta.slack.channel ))
+          username: (( grab meta.slack.username ))
+          icon_url: (( grab meta.slack.icon ))
+          text:    '(( concat meta.slack.fail_url " " meta.pipeline ": pre-flight-java job failed" ))'
 
   - name: testflight
     plan:
