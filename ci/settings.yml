@@ -77,19 +77,16 @@ groups:
     jobs:
       - (( prepend ))
       - pre-flight
+      - pre-flight-java
 
 jobs:
   - name: pre-flight
     public: true
     serial: true
     plan:
-    - name: main
-      do:
       - { get: git, trigger: true }
       - { get: ruby-image }
-
-      - name: pre-flight-rake
-        task: pre-flight-rake
+      - task: pre-flight-rake
         image: ruby-image
         config:
           platform: linux
@@ -112,24 +109,21 @@ jobs:
 
                 bundle install
                 bundle exec rake
-      on_failure:
-        put: notify
-        params:
-          channel:  (( grab meta.slack.channel ))
-          username: (( grab meta.slack.username ))
-          icon_url: (( grab meta.slack.icon ))
-          text:    '(( concat meta.slack.fail_url " " meta.pipeline ": pre-flight job failed" ))'
+    on_failure:
+      put: notify
+      params:
+        channel:  (( grab meta.slack.channel ))
+        username: (( grab meta.slack.username ))
+        icon_url: (( grab meta.slack.icon ))
+        text:    '(( concat meta.slack.fail_url " " meta.pipeline ": pre-flight job failed" ))'
 
   - name: pre-flight-java
     public: true
     serial: true
     plan:
-    - name: main
-      do:
       - { get: git, trigger: true, passed: [ pre-flight ] }
       - { get: java-image }
-      - name: pre-flight-java
-        task: pre-flight-java
+      - task: pre-flight-java
         image: java-image
         config:
           platform: linux
@@ -149,22 +143,23 @@ jobs:
                 pushd "git/src/uaa" > /dev/null
 
                 ./gradlew build --build-cache --stacktrace
-      on_failure:
-        put: notify
-        params:
-          channel:  (( grab meta.slack.channel ))
-          username: (( grab meta.slack.username ))
-          icon_url: (( grab meta.slack.icon ))
-          text:    '(( concat meta.slack.fail_url " " meta.pipeline ": pre-flight-java job failed" ))'
+    on_failure:
+      put: notify
+      params:
+        channel:  (( grab meta.slack.channel ))
+        username: (( grab meta.slack.username ))
+        icon_url: (( grab meta.slack.icon ))
+        text:    '(( concat meta.slack.fail_url " " meta.pipeline ": pre-flight-java job failed" ))'
 
   - name: testflight
     plan:
-    - name: main
+    - (( inline ))
+    - # name: main
       do:
       - (( inline ))
       - { get: git, trigger: true, passed: [ pre-flight ] }
       - {}
-      - name: testflight
+      - # name: testflight
         config:
           params:
             # NOTE: this UAA_VERSION environment variable is required by the
@@ -174,13 +169,14 @@ jobs:
 
   - name: testflight-pr
     plan:
-    - name: main
+    - (( inline ))
+    - # name: main
       do:
       - (( inline ))
       - {} # get: git-pull-requests
       - {} # get: image
       - {} # name: pending-status
-      - name: testflight
+      - # name: testflight
         config:
           params:
             # NOTE: this UAA_VERSION environment variable is required by the

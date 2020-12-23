@@ -93,11 +93,11 @@ jobs:
     public: true
     serial: true
     plan:
-    - name: main
+    - # name: main
       do:
       - { get: git, trigger: true }
       - { get: image }
-      - name: testflight
+      - # name: testflight
         task: testflight
         image: image
         config:
@@ -132,16 +132,16 @@ jobs:
     public: true
     serial: true
     plan:
-    - name: main
+    - # name: main
       do:
       - { get: git-pull-requests, trigger: true, version: every }
       - { get: image }
-      - name: pending-status
+      - # name: pending-status
         put: git-pull-requests
         params:
           path: git-pull-requests
           status: pending
-      - name: testflight
+      - # name: testflight
         task: testflight
         image: image
         config:
@@ -174,7 +174,7 @@ jobs:
           params:
             path: git-pull-requests
             status: failure
-      - name: pr-success-message
+      - # name: pr-success-message
         task: pr-success-message
         image: image
         config:
@@ -340,7 +340,7 @@ jobs:
       - { get: version, passed: [rc], params: {bump: final} }
       - { get: git,     passed: [rc] }
       - { get: image,   passed: [rc] }
-      - name: release
+      - # name: release
         task: release
         image: image
         config:
@@ -369,27 +369,27 @@ jobs:
             AWS_SECRET_KEY:       (( grab meta.aws.secret_key ))
             MANIFESTS_DIR: (( grab meta.manifest.directory ))
 
-      - name: upload-git
+      - # name: upload-git
         put: git
         params:
           rebase: true
           repository: pushme
-      - name: tarball
+      - # name: tarball
         put: s3-tarball
         params:
           file:  (( concat "gh/artifacts/" meta.name "-*.tgz" ))
-      - name: github-release
+      - # name: github-release
         put: github
         params:
           name:   gh/name
           tag:    gh/tag
           body:   gh/notes.md
           globs: [gh/artifacts/*]
-      - name: version-bump
+      - # name: version-bump
         put: version
         params:
           bump: patch
-      - name: notify
+      - # name: notify
         put: notify
         params:
           channel:  (( grab meta.slack.channel ))
@@ -440,7 +440,7 @@ jobs:
 
   - name: use-compiled-releases
     plan:
-      - name: resources
+      - # name: resources
         in_parallel:
           steps:
             - get: git
@@ -476,7 +476,7 @@ jobs:
             BRANCH:        (( grab meta.github.branch ))
             STEMCELL_OS:   (( grab meta.bosh.stemcell.os ))
             MANIFESTS_DIR: (( grab meta.manifest.directory ))
-      - name: upload-git
+      - # name: upload-git
         put: git
         params:
           rebase: true
