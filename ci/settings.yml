@@ -40,7 +40,7 @@ meta:
 
   java-image:
     name: harbor.ci.gstack.io/library/openjdk
-    tag:  11.0.9-slim
+    tag:  11.0.11-9-slim
 
   aws:
     bucket:      (( grab meta.pipeline ))
