@@ -141,8 +141,9 @@ jobs:
                 export GRADLE_USER_HOME=${PWD}/gradle-home
 
                 pushd "git/src/uaa" > /dev/null
-
-                ./gradlew build --build-cache --stacktrace
+                    ./gradlew build --build-cache --stacktrace
+                    ./gradlew --stop
+                popd  > /dev/null
     on_failure:
       put: notify
       params:
