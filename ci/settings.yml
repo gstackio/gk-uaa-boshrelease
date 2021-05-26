@@ -202,7 +202,6 @@ resources:
       password:   (( grab meta.image.registry.password ))
 
   - name: version
-    type: semver
     source:
       bucket:            (( prune ))
       region_name:       (( prune ))
