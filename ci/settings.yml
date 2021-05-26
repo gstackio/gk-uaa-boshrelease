@@ -155,12 +155,13 @@ jobs:
   - name: testflight
     plan:
     - (( inline ))
-    - # name: main
-      do:
+    - do:
       - (( inline ))
-      - { get: git, trigger: true, passed: [ pre-flight ] }
-      - {}
-      - # name: testflight
+      - in_parallel:
+          - (( merge on get ))
+          - get: git
+            passed: [ pre-flight ]
+      - # task: testflight
         config:
           params:
             # NOTE: this UAA_VERSION environment variable is required by the
@@ -171,13 +172,11 @@ jobs:
   - name: testflight-pr
     plan:
     - (( inline ))
-    - # name: main
-      do:
+    - do:
       - (( inline ))
-      - {} # get: git-pull-requests
-      - {} # get: image
-      - {} # name: pending-status
-      - # name: testflight
+      - {} # in_parallel:
+      - {} # put: git-pull-requests
+      - # task: testflight
         config:
           params:
             # NOTE: this UAA_VERSION environment variable is required by the
