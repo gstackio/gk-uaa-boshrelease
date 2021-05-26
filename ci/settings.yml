@@ -8,7 +8,7 @@ meta:
 
   test-errands: ~
 
-  initial_version: 74.29.1
+  initial_version: 75.2.1
 
   manifest:
     directory: manifests
